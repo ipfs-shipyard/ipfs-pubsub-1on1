@@ -73,7 +73,7 @@ describe('DirectChannel', function() {
       c.close()
     })
 
-    it('connects two peers', async () => {
+    it('has two peers', async () => {
       const c1 = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
       const c2 = new Channel(ipfs2, ipfs1._peerInfo.id._idB58String)
 
@@ -118,6 +118,7 @@ describe('DirectChannel', function() {
         c2.on('error', reject)
 
         c2.on('message', (m) => {
+          assert.notEqual(m, null)
           assert.equal(m.from, ipfs1._peerInfo.id._idB58String)
           assert.equal(m.data.toString(), 'hello1')
           assert.equal(m.topicIDs.length, 1)
@@ -134,11 +135,34 @@ describe('DirectChannel', function() {
           assert.equal(m.topicIDs[0], c2.id)
           c1.close()
           c2.close()
-          resolve()
+          setTimeout(() => resolve(), 500)
         })
 
         c1.send('hello1')
       })
+    })
+  })
+
+  describe('connect', function() {
+    it('connects the peers', async () => {
+      let c1, c2
+
+      c1 = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
+
+      setTimeout(() => {
+        c2 = new Channel(ipfs2, ipfs1._peerInfo.id._idB58String)
+      }, 1000)
+
+      let peers = await ipfs1.pubsub.peers(c1.id)
+      assert.deepEqual(peers, [])
+
+      await c1.connect()
+
+      peers = await ipfs1.pubsub.peers(c1.id)
+      assert.deepEqual(peers, [ipfs2._peerInfo.id._idB58String])
+
+      c1.close()
+      c2.close()
     })
   })
 

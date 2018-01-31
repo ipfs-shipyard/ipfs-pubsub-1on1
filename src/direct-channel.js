@@ -4,6 +4,7 @@ const path = require('path')
 const EventEmitter = require('events')
 const PROTOCOL = require('./protocol')
 const encode = require('./encoding')
+const waitForPeers = require('../test/utils/wait-for-peers')
 
 /**
  * Communication channel over Pubsub between two IPFS nodes
@@ -17,6 +18,8 @@ class DirectChannel extends EventEmitter {
     if (!this._ipfs.pubsub) {
       throw new Error('This IPFS node does not support pubsub.')
     }
+
+    this._peerID = peerID
 
     // Channel's participants
     this._peers = Array.from([
@@ -33,7 +36,7 @@ class DirectChannel extends EventEmitter {
     // Message handler
     this._listener = message => {
       // Filter out all messages that didn't come from the second peer
-      if (message && message.from === peerID) {
+      if (message && message.from === this._peerID) {
         this.emit('message', message)
       }
     }
@@ -58,6 +61,10 @@ class DirectChannel extends EventEmitter {
     return this._peers
   }
 
+  connect () {
+    return waitForPeers(this._ipfs, [this._peerID], this._id)
+  }
+
   /**
    * Send a message to the other peer
    * @param  {[Any]} message Payload
@@ -75,7 +82,7 @@ class DirectChannel extends EventEmitter {
    * Close the channel
    */
   close () {
-    this._ipfs.pubsub.unsubscribe(this._id, this._listener)    
+    this._ipfs.pubsub.unsubscribe(this._id, this._listener)
   }
 
   _start () {
@@ -85,7 +92,7 @@ class DirectChannel extends EventEmitter {
       } else {
         this.emit('ready', this._id)
       }
-    })    
+    })
   }
 }
 
