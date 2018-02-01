@@ -4,7 +4,7 @@ const path = require('path')
 const EventEmitter = require('events')
 const PROTOCOL = require('./protocol')
 const encode = require('./encoding')
-const waitForPeers = require('../test/utils/wait-for-peers')
+const { waitForPeers } = require('../test/utils/ipfs-utils')
 
 /**
  * Communication channel over Pubsub between two IPFS nodes

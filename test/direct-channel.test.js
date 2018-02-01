@@ -4,12 +4,12 @@ const path = require('path')
 const rmrf = require('rimraf')
 const assert = require('assert')
 const pMapSeries = require('p-map-series')
-const waitForPeers = require('./utils/wait-for-peers')
 const { 
   createIpfsTestInstances,
   destroyIpfsTestInstances,
-  connectIpfsInstances
-} = require('./utils/start-ipfs')
+  connectIpfsInstances,
+  waitForPeers,
+} = require('./utils/ipfs-utils')
 
 const Channel = require('../src/direct-channel.js')
 const PROTOCOL = require('../src/protocol')
