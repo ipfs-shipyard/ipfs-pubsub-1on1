@@ -4,20 +4,25 @@ const path = require('path')
 const EventEmitter = require('events')
 const PROTOCOL = require('./protocol')
 const encode = require('./encoding')
-const { getPeerID, waitForPeers } = require('../test/utils/ipfs-utils')
+const waitForPeers = require('./wait-for-peers')
+const { getPeerID } = require('../test/utils/ipfs-utils')
 
 /**
  * Communication channel over Pubsub between two IPFS nodes
  */
 class DirectChannel extends EventEmitter {
-  constructor (ipfs, receiverID, options) {
+  constructor (ipfs, receiverID, options = { open: true }) {
     super()
 
+    // IPFS instance to use internally
     this._ipfs = ipfs
 
-    if (!this._ipfs.pubsub) {
+    if (!ipfs.pubsub) {
       throw new Error('This IPFS node does not support pubsub.')
     }
+
+    // State
+    this._open = false
 
     // Setup IDs
     this._senderID = getPeerID(this._ipfs)
@@ -29,9 +34,6 @@ class DirectChannel extends EventEmitter {
     // ID of the channel is "<peer1 id>/<peer 2 id>""
     this._id = path.join('/', PROTOCOL, this._peers.join('/'))
 
-    // Options
-    this._options = Object.assign({}, { start: true }, options)
-
     // Message handler
     this._listener = message => {
       // Filter out all messages that didn't come from the second peer
@@ -41,7 +43,9 @@ class DirectChannel extends EventEmitter {
     }
 
     // Start communicating
-    this._start()
+    if (options.open || !options) {
+      this._openChannel()
+    }
   }
 
   /**
@@ -60,21 +64,17 @@ class DirectChannel extends EventEmitter {
     return this._peers
   }
 
-  connect () {
-    return waitForPeers(this._ipfs, [this._receiverID], this._id)
+  async connect () {
+    await waitForPeers(this._ipfs, [this._receiverID], this._id)
   }
 
   /**
    * Send a message to the other peer
    * @param  {[Any]} message Payload
    */
-  send (message) {
+  async send (message) {
     let m = encode(message)
-    this._ipfs.pubsub.publish(this._id, m, (err) => {
-      if (err) {
-        this.emit('error', err)
-      }
-    })
+    await this._ipfs.pubsub.publish(this._id, m)
   }
 
   /**
@@ -82,16 +82,19 @@ class DirectChannel extends EventEmitter {
    */
   close () {
     this._ipfs.pubsub.unsubscribe(this._id, this._listener)
+    this._open = false
   }
 
-  _start () {
-    this._ipfs.pubsub.subscribe(this._id, this._listener, (err) => {
-      if (err) {
-        this.emit('error', err)
-      } else {
-        this.emit('ready', this._id)
-      }
-    })
+  async _openChannel () {
+    await this._ipfs.pubsub.subscribe(this._id, this._listener)
+    this._open = true
+  }
+
+  static async open (ipfs, receiverID, options) {
+    const opts = Object.assign({}, options, { open: false })
+    const channel = new DirectChannel(ipfs, receiverID, opts)
+    await channel._openChannel()
+    return channel
   }
 }
 

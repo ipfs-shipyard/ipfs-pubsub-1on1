@@ -74,40 +74,33 @@ describe('DirectChannel', function() {
       c2.close()
     })
 
-    it('emits \'ready\' event', (done) => {
-      const c1 = new Channel(ipfs1, id2)
-      const c2 = new Channel(ipfs2, id1)
-
-      c2.on('ready', (id) => {
-        assert.equal(id, c1.id)
-        assert.equal(id, c2.id)
-        c1.close()
-        c2.close()
-        done()
-      })
+    it('can be created with one line', async () => {
+      const c = await Channel.open(ipfs1, id2)
+      assert.equal(c._open, true)
+      c.close()
     })
   })
 
   describe('messaging', function() {
     it('sends and receives messages', async () => {
-      const c1 = new Channel(ipfs1, id2)
-      const c2 = new Channel(ipfs2, id1)
+      const c1 = await Channel.open(ipfs1, id2)
+      const c2 = await Channel.open(ipfs2, id1)
 
-      await waitForPeers(ipfs2, [id1], c2.id)
-      await waitForPeers(ipfs1, [id2], c1.id)
+      await c1.connect()
+      await c2.connect()
 
-      return new Promise((resolve, reject) => {
+      return new Promise(async (resolve, reject) => {
         c1.on('error', reject)
         c2.on('error', reject)
 
-        c2.on('message', (m) => {
+        c2.on('message', async (m) => {
           assert.notEqual(m, null)
           assert.equal(m.from, id1)
           assert.equal(m.data.toString(), 'hello1')
           assert.equal(m.topicIDs.length, 1)
           assert.equal(m.topicIDs[0], c1.id)
           assert.equal(m.topicIDs[0], c2.id)
-          c2.send(Buffer.from('hello2'))
+          await c2.send(Buffer.from('hello2'))
         })
 
         c1.on('message', (m) => {
@@ -121,7 +114,7 @@ describe('DirectChannel', function() {
           setTimeout(() => resolve(), 500)
         })
 
-        c1.send('hello1')
+        await c1.send('hello1')
       })
     })
   })
@@ -130,11 +123,8 @@ describe('DirectChannel', function() {
     it('connects the peers', async () => {
       let c1, c2
 
-      c1 = new Channel(ipfs1, id2)
-
-      setTimeout(() => {
-        c2 = new Channel(ipfs2, id1)
-      }, 1000)
+      c1 = await Channel.open(ipfs1, id2)
+      c2 = await Channel.open(ipfs2, id1)
 
       let peers = await ipfs1.pubsub.peers(c1.id)
       assert.deepEqual(peers, [])
@@ -151,11 +141,11 @@ describe('DirectChannel', function() {
 
   describe('disconnecting', function() {
     it('closes a channel', async () => {
-      const c1 = new Channel(ipfs1, id2)
-      const c2 = new Channel(ipfs2, id1)
+      const c1 = await Channel.open(ipfs1, id2)
+      const c2 = await Channel.open(ipfs2, id1)
 
-      await waitForPeers(ipfs2, [id1], c2.id)
-      await waitForPeers(ipfs1, [id2], c1.id)
+      await c1.connect()
+      await c2.connect()
 
       return new Promise(async (resolve, reject) => {
         c1.close()
@@ -185,21 +175,20 @@ describe('DirectChannel', function() {
       } catch (e) {
         err = e
       }
-      
+
       assert.equal(err, 'Error: This IPFS node does not support pubsub.')
     })
   })
 
   describe('non-participant peers can\'t send messages', function() {
     it('doesn\'t receive unwated messages', async () => {
-      const c1 = new Channel(ipfs1, id2)
-      const c2 = new Channel(ipfs2, id1)
+      const c1 = await Channel.open(ipfs1, id2)
+      const c2 = await Channel.open(ipfs2, id1)
 
-      await waitForPeers(ipfs2, [id1], c2.id)
-      await waitForPeers(ipfs1, [id2], c1.id)
+      await c1.connect()
+      await c2.connect()
 
       return new Promise(async (resolve, reject) => {
-        c1.on('error', reject)
         c1.on('message', (m) => {
           assert.equal(m.from, id2)
           assert.equal(m.data.toString(), 'hello1')
