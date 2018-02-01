@@ -5,6 +5,12 @@ const rmrf = require('rimraf')
 const config = require('./config')
 const pMapSeries = require('p-map-series')
 
+const getPeerID = (ipfs) => {
+  return ipfs._peerInfo
+    ? ipfs._peerInfo.id._idB58String
+    : ipfs._peerInfo.id._idB58String // TODO: get ipfs peer ID in js-ipfs-api
+}
+
 /**
  * Start an IPFS instance
  * @param  {Object}  config  [IPFS configuration to use]
@@ -70,6 +76,7 @@ const waitForPeers = async (ipfs, peersToWait, topic) => {
   })
 }
 
+exports.getPeerID = getPeerID
 exports.startIpfs = startIpfs
 exports.createIpfsTestInstances = createIpfsTestInstances
 exports.destroyIpfsTestInstances = destroyIpfsTestInstances
