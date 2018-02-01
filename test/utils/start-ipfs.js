@@ -27,6 +27,13 @@ const createIpfsTestInstances = async (ipfsPaths) => {
   })
 }
 
+const destroyIpfsTestInstances = async (instances, ipfsPaths) => {
+  const stop = ipfs => ipfs.stop()
+  const removeDir = p => rmrf.sync(p)
+  await pMapSeries(instances, stop)
+  ipfsPaths.forEach(removeDir)
+}
+
 const connectIpfsInstances = async (instances) => {
   // Multiaddress of all instances
   const addresses = instances.map(ipfs => ipfs._peerInfo.multiaddrs._multiaddrs[0].toString())
@@ -44,4 +51,5 @@ const connectIpfsInstances = async (instances) => {
 
 exports.startIpfs = startIpfs
 exports.createIpfsTestInstances = createIpfsTestInstances
+exports.destroyIpfsTestInstances = destroyIpfsTestInstances
 exports.connectIpfsInstances = connectIpfsInstances

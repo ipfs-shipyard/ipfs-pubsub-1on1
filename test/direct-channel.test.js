@@ -1,99 +1,82 @@
 'use strict'
 
 const path = require('path')
-const assert = require('assert')
 const rmrf = require('rimraf')
-const config = require('./utils/config')
-const startIpfs = require('./utils/start-ipfs')
+const assert = require('assert')
+const pMapSeries = require('p-map-series')
 const waitForPeers = require('./utils/wait-for-peers')
+const { 
+  createIpfsTestInstances,
+  destroyIpfsTestInstances,
+  connectIpfsInstances
+} = require('./utils/start-ipfs')
 
 const Channel = require('../src/direct-channel.js')
 const PROTOCOL = require('../src/protocol')
 
-const ipfsPath1 = './test-data/peer1/ipfs'
-const ipfsPath2 = './test-data/peer2/ipfs'
-const ipfsPath3 = './test-data/peer3/ipfs'
+// IPFS instances used in these tests
+const ipfsPaths = [
+  './tmp/peer1/ipfs',
+  './tmp/peer2/ipfs',
+  './tmp/peer3/ipfs',
+]
 
 describe('DirectChannel', function() {
-  this.timeout(config.timeout)
+  this.timeout(20000)
 
+  let instances = []
   let ipfs1, ipfs2, ipfs3
 
+  let id1, id2, id3
+  let expectedPeerIDs = []
+
   before(async () => {
-    rmrf.sync(ipfsPath1)
-    rmrf.sync(ipfsPath2)
-    rmrf.sync(ipfsPath3)
-    config.daemon1.repo = ipfsPath1
-    config.daemon2.repo = ipfsPath2
-    config.daemon3.repo = ipfsPath3
-    ipfs1 = await startIpfs(config.daemon1)
-    ipfs2 = await startIpfs(config.daemon2)
-    ipfs3 = await startIpfs(config.daemon3)
-    // Connect the peers manually to speed up test times
-    await ipfs2.swarm.connect(ipfs1._peerInfo.multiaddrs._multiaddrs[0].toString())
-    await ipfs1.swarm.connect(ipfs2._peerInfo.multiaddrs._multiaddrs[0].toString())
-    await ipfs3.swarm.connect(ipfs1._peerInfo.multiaddrs._multiaddrs[0].toString())
+    instances = await createIpfsTestInstances(ipfsPaths)
+    await connectIpfsInstances(instances)
+    ipfs1 = instances[0]
+    ipfs2 = instances[1]
+    ipfs3 = instances[2]
+    id1 = ipfs1._peerInfo.id._idB58String
+    id2 = ipfs2._peerInfo.id._idB58String
+    id3 = ipfs3._peerInfo.id._idB58String
+    // Note, we only create channels between peer1 and peer2 in these test,
+    // peer3 is used for "external actor" tests
+    expectedPeerIDs = Array.from([id1, id2]).sort()
   })
 
   after(async () => {
-    if (ipfs1)
-      await ipfs1.stop()
-
-    if (ipfs2)
-      await ipfs2.stop()
-
-    if (ipfs3)
-      await ipfs3.stop()
+    await destroyIpfsTestInstances(instances, ipfsPaths)
+    rmrf.sync('./tmp/') // remove test data directory
   })
 
   describe('create a channel', function() {
     it('has two participants', async () => {
       const c = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
-
-      const expectedPeerIDs = Array.from([
-        ipfs1._peerInfo.id._idB58String, 
-        ipfs2._peerInfo.id._idB58String
-      ]).sort()
-
       assert.deepEqual(c.peers, expectedPeerIDs)
-
       c.close()
     })
 
     it('has correct ID', async () => {
-      const c = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
-
-      const expectedID = Array.from([
-        ipfs1._peerInfo.id._idB58String, 
-        ipfs2._peerInfo.id._idB58String
-      ]).sort().join('/')
-
-      assert.deepEqual(c.id, path.join('/', PROTOCOL, expectedID))
-
+      const expectedID = path.join('/', PROTOCOL, expectedPeerIDs.join('/'))
+      const c = new Channel(ipfs1, id2)
+      assert.deepEqual(c.id, expectedID)
       c.close()
     })
 
     it('has two peers', async () => {
-      const c1 = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
-      const c2 = new Channel(ipfs2, ipfs1._peerInfo.id._idB58String)
-
-      const expectedPeerIDs = Array.from([
-        ipfs1._peerInfo.id._idB58String, 
-        ipfs2._peerInfo.id._idB58String
-      ]).sort()
-
+      const c1 = new Channel(ipfs1, id2)
+      const c2 = new Channel(ipfs2, id1)
       assert.deepEqual(c1.peers, expectedPeerIDs)
       assert.deepEqual(c2.peers, expectedPeerIDs)
       assert.deepEqual(c1.id, path.join('/', PROTOCOL, expectedPeerIDs.join('/')))
       assert.deepEqual(c2.id, path.join('/', PROTOCOL, expectedPeerIDs.join('/')))
-
       c1.close()
       c2.close()
     })
 
     it('emits \'ready\' event', (done) => {
-      const c1 = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
-      const c2 = new Channel(ipfs2, ipfs1._peerInfo.id._idB58String)
+      const c1 = new Channel(ipfs1, id2)
+      const c2 = new Channel(ipfs2, id1)
 
       c2.on('ready', (id) => {
         assert.equal(id, c1.id)
@@ -107,11 +90,11 @@ describe('DirectChannel', function() {
 
   describe('messaging', function() {
     it('sends and receives messages', async () => {
-      const c1 = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
-      const c2 = new Channel(ipfs2, ipfs1._peerInfo.id._idB58String)
+      const c1 = new Channel(ipfs1, id2)
+      const c2 = new Channel(ipfs2, id1)
 
-      await waitForPeers(ipfs2, [ipfs1._peerInfo.id._idB58String], c2.id)
-      await waitForPeers(ipfs1, [ipfs2._peerInfo.id._idB58String], c1.id)
+      await waitForPeers(ipfs2, [id1], c2.id)
+      await waitForPeers(ipfs1, [id2], c1.id)
 
       return new Promise((resolve, reject) => {
         c1.on('error', reject)
@@ -119,7 +102,7 @@ describe('DirectChannel', function() {
 
         c2.on('message', (m) => {
           assert.notEqual(m, null)
-          assert.equal(m.from, ipfs1._peerInfo.id._idB58String)
+          assert.equal(m.from, id1)
           assert.equal(m.data.toString(), 'hello1')
           assert.equal(m.topicIDs.length, 1)
           assert.equal(m.topicIDs[0], c1.id)
@@ -128,7 +111,7 @@ describe('DirectChannel', function() {
         })
 
         c1.on('message', (m) => {
-          assert.equal(m.from, ipfs2._peerInfo.id._idB58String)
+          assert.equal(m.from, id2)
           assert.equal(m.data.toString(), Buffer.from('hello2'))
           assert.equal(m.topicIDs.length, 1)
           assert.equal(m.topicIDs[0], c1.id)
@@ -147,10 +130,10 @@ describe('DirectChannel', function() {
     it('connects the peers', async () => {
       let c1, c2
 
-      c1 = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
+      c1 = new Channel(ipfs1, id2)
 
       setTimeout(() => {
-        c2 = new Channel(ipfs2, ipfs1._peerInfo.id._idB58String)
+        c2 = new Channel(ipfs2, id1)
       }, 1000)
 
       let peers = await ipfs1.pubsub.peers(c1.id)
@@ -159,7 +142,7 @@ describe('DirectChannel', function() {
       await c1.connect()
 
       peers = await ipfs1.pubsub.peers(c1.id)
-      assert.deepEqual(peers, [ipfs2._peerInfo.id._idB58String])
+      assert.deepEqual(peers, [id2])
 
       c1.close()
       c2.close()
@@ -168,11 +151,11 @@ describe('DirectChannel', function() {
 
   describe('disconnecting', function() {
     it('closes a channel', async () => {
-      const c1 = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
-      const c2 = new Channel(ipfs2, ipfs1._peerInfo.id._idB58String)
+      const c1 = new Channel(ipfs1, id2)
+      const c2 = new Channel(ipfs2, id1)
 
-      await waitForPeers(ipfs2, [ipfs1._peerInfo.id._idB58String], c2.id)
-      await waitForPeers(ipfs1, [ipfs2._peerInfo.id._idB58String], c1.id)
+      await waitForPeers(ipfs2, [id1], c2.id)
+      await waitForPeers(ipfs1, [id2], c1.id)
 
       return new Promise(async (resolve, reject) => {
         c1.close()
@@ -198,7 +181,7 @@ describe('DirectChannel', function() {
     it('throws an error if pubsub is not supported by given IPFS instance', async () => {
       let c, err
       try {
-        c = new Channel({}, ipfs2._peerInfo.id._idB58String)
+        c = new Channel({}, id2)
       } catch (e) {
         err = e
       }
@@ -209,16 +192,16 @@ describe('DirectChannel', function() {
 
   describe('non-participant peers can\'t send messages', function() {
     it('doesn\'t receive unwated messages', async () => {
-      const c1 = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
-      const c2 = new Channel(ipfs2, ipfs1._peerInfo.id._idB58String)
+      const c1 = new Channel(ipfs1, id2)
+      const c2 = new Channel(ipfs2, id1)
 
-      await waitForPeers(ipfs2, [ipfs1._peerInfo.id._idB58String], c2.id)
-      await waitForPeers(ipfs1, [ipfs2._peerInfo.id._idB58String], c1.id)
+      await waitForPeers(ipfs2, [id1], c2.id)
+      await waitForPeers(ipfs1, [id2], c1.id)
 
       return new Promise(async (resolve, reject) => {
         c1.on('error', reject)
         c1.on('message', (m) => {
-          assert.equal(m.from, ipfs2._peerInfo.id._idB58String)
+          assert.equal(m.from, id2)
           assert.equal(m.data.toString(), 'hello1')
           assert.equal(m.topicIDs.length, 1)
           assert.equal(m.topicIDs[0], c1.id)
@@ -229,7 +212,7 @@ describe('DirectChannel', function() {
         })
 
         await ipfs3.pubsub.subscribe(c1.id, () => {})
-        await waitForPeers(ipfs1, [ipfs3._peerInfo.id._idB58String], c1.id)
+        await waitForPeers(ipfs1, [id3], c1.id)
         await ipfs3.pubsub.publish(c1.id, Buffer.from('OMG!'))
 
         c2.send('hello1')
