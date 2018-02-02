@@ -68,8 +68,8 @@ describe('DirectChannel', function() {
       const c2 = new Channel(ipfs2, id1)
       assert.deepEqual(c1.peers, expectedPeerIDs)
       assert.deepEqual(c2.peers, expectedPeerIDs)
-      assert.deepEqual(c1.id, path.join('/', PROTOCOL, expectedPeerIDs.join('/')))
-      assert.deepEqual(c2.id, path.join('/', PROTOCOL, expectedPeerIDs.join('/')))
+      assert.equal(c1.id, path.join('/', PROTOCOL, expectedPeerIDs.join('/')))
+      assert.equal(c2.id, path.join('/', PROTOCOL, expectedPeerIDs.join('/')))
       c1.close()
       c2.close()
     })
@@ -80,6 +80,39 @@ describe('DirectChannel', function() {
       const channelID = topics.find(e => e === c.id)
       assert.equal(channelID, c.id)
       c.close()
+    })
+  })
+
+  describe('properties', function() {
+    let c
+
+    beforeEach(async () => {
+      c = await Channel.open(ipfs1, id2)
+    })
+
+    afterEach(() => {
+      if (c) {
+        c.close()
+      }
+    })
+
+    it('has an id', async () => {
+      assert.equal(c.id, path.join('/', PROTOCOL, expectedPeerIDs.join('/')))
+    })
+
+    it('has two peers', async () => {
+      assert.equal(c.peers.length, 2)
+      assert.deepEqual(c.peers, expectedPeerIDs)
+    })
+
+    it('has an event emitter for \'message\' event', async () => {
+      let err
+      try {
+        c.on('message', () => {})
+      } catch (e) {
+        err = e
+      }
+      assert.equal(err, null)
     })
   })
 
