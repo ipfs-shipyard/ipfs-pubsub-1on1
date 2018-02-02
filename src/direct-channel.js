@@ -31,10 +31,12 @@ class DirectChannel extends EventEmitter {
     // ID of the channel is "<peer1 id>/<peer 2 id>""
     this._id = path.join('/', PROTOCOL, this._peers.join('/'))
 
-    // Message handler
-    this._listener = message => {
+    // Function to use to handle incoming messages
+    this._messageHandler = message => {
+      // Make sure the message is coming from the correct peer
+      const isValid = message && message.from === this._receiverID
       // Filter out all messages that didn't come from the second peer
-      if (message && message.from === this._receiverID) {
+      if (isValid) {
         this.emit('message', message)
       }
     }
@@ -78,11 +80,11 @@ class DirectChannel extends EventEmitter {
    * Close the channel
    */
   close () {
-    this._ipfs.pubsub.unsubscribe(this._id, this._listener)
+    this._ipfs.pubsub.unsubscribe(this._id, this._messageHandler)
   }
 
   async _openChannel () {
-    await this._ipfs.pubsub.subscribe(this._id, this._listener)
+    await this._ipfs.pubsub.subscribe(this._id, this._messageHandler)
   }
 
   static async open (ipfs, receiverID, options) {
