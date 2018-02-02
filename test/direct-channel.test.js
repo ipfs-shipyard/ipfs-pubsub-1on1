@@ -76,7 +76,9 @@ describe('DirectChannel', function() {
 
     it('can be created with one line', async () => {
       const c = await Channel.open(ipfs1, id2)
-      assert.equal(c._open, true)
+      const topics = await ipfs1.pubsub.ls()
+      const channelID = topics.find(e => e === c.id)
+      assert.equal(channelID, c.id)
       c.close()
     })
   })

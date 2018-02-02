@@ -21,9 +21,6 @@ class DirectChannel extends EventEmitter {
       throw new Error('This IPFS node does not support pubsub.')
     }
 
-    // State
-    this._open = false
-
     // Setup IDs
     this._senderID = getPeerID(this._ipfs)
     this._receiverID = receiverID
@@ -82,12 +79,10 @@ class DirectChannel extends EventEmitter {
    */
   close () {
     this._ipfs.pubsub.unsubscribe(this._id, this._listener)
-    this._open = false
   }
 
   async _openChannel () {
     await this._ipfs.pubsub.subscribe(this._id, this._listener)
-    this._open = true
   }
 
   static async open (ipfs, receiverID, options) {
