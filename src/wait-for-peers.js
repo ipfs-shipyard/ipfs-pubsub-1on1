@@ -4,7 +4,7 @@ const waitForPeers = async (ipfs, peersToWait, topic) => {
   const checkPeers = async () => {
     const peers = await ipfs.pubsub.peers(topic)
     const hasAllPeers = peersToWait.map((e) => peers.includes(e)).filter((e) => e === false).length === 0
-    return hasAllPeers      
+    return hasAllPeers
   }
 
   if (await checkPeers()) {
@@ -17,7 +17,7 @@ const waitForPeers = async (ipfs, peersToWait, topic) => {
         clearInterval(interval)
         resolve()
       }
-    }, 10)
+    }, 100)
   })
 }
 
