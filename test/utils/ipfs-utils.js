@@ -7,9 +7,7 @@ const config = require('./config')
 const waitForPeers = require('../../src/wait-for-peers')
 
 const getPeerID = (ipfs) => {
-  return ipfs._peerInfo
-    ? ipfs._peerInfo.id._idB58String
-    : ipfs._peerInfo.id._idB58String // TODO: get ipfs peer ID in js-ipfs-api
+  return ipfs._peerInfo.id._idB58String || ipfs._peerInfo.id
 }
 
 /**
