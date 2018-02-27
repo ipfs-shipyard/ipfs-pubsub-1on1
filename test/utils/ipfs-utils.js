@@ -6,10 +6,6 @@ const pMapSeries = require('p-map-series')
 const config = require('./config')
 const waitForPeers = require('../../src/wait-for-peers')
 
-const getPeerID = (ipfs) => {
-  return ipfs._peerInfo.id._idB58String || ipfs._peerInfo.id
-}
-
 /**
  * Start an IPFS instance
  * @param  {Object}  config  [IPFS configuration to use]
@@ -54,7 +50,6 @@ const connectIpfsInstances = async (instances) => {
   })
 }
 
-exports.getPeerID = getPeerID
 exports.startIpfs = startIpfs
 exports.createIpfsTestInstances = createIpfsTestInstances
 exports.destroyIpfsTestInstances = destroyIpfsTestInstances
