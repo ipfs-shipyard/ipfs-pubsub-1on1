@@ -1,7 +1,7 @@
 {
   "name": "ipfs-pubsub-dc",
   "version": "0.0.1",
-  "description": "Communication channel over Pubsub between two IPFS nodes",
+  "description": "1-to1- communication channel over Pubsub between two IPFS nodes",
   "license": "MIT",
   "author": "Haad",
   "main": "src/direct-channel.js",
