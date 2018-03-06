@@ -223,23 +223,27 @@ describe('DirectChannel', function() {
       await c1.connect()
       await c2.connect()
 
-      return new Promise(async (resolve, reject) => {
-        c1.on('message', (m) => {
-          assert.equal(m.from, id2)
-          assert.equal(m.data.toString(), 'hello1')
-          assert.equal(m.topicIDs.length, 1)
-          assert.equal(m.topicIDs[0], c1.id)
-          assert.equal(m.topicIDs[0], c2.id)
-          c1.close()
-          c2.close()
-          resolve()
-        })
+      c1.on('message', (m) => {
+        assert.equal(m.from, id2)
+        assert.equal(m.data.toString(), 'hello1')
+        assert.equal(m.topicIDs.length, 1)
+        assert.equal(m.topicIDs[0], c1.id)
+        assert.equal(m.topicIDs[0], c2.id)
+      })
 
-        await ipfs3.pubsub.subscribe(c1.id, () => {})
-        await waitForPeers(ipfs1, [id3], c1.id)
-        await ipfs3.pubsub.publish(c1.id, Buffer.from('OMG!'))
+      await ipfs3.pubsub.subscribe(c1.id, () => {})
+      await waitForPeers(ipfs1, [id3], c1.id)
+      await ipfs3.pubsub.publish(c1.id, Buffer.from('OMG!'))
 
-        c2.send('hello1')
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          c2.send('hello1')
+          setTimeout(() => {
+            c1.close()
+            c2.close()
+            resolve()
+          }, 1000)
+        }, 1000)
       })
     })
   })
