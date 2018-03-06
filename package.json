@@ -1,6 +1,6 @@
 {
   "name": "ipfs-pubsub-1on1",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "1-to-1 communication channel over IPFS Pubsub between two peers",
   "license": "MIT",
   "author": "Haad",
