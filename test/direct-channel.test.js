@@ -200,6 +200,21 @@ describe('DirectChannel', function() {
         }, 200)
       })
     })
+
+    it('removes event listener upon closing the channel', async () => {
+      const c1 = await Channel.open(ipfs1, id2)
+      const c2 = await Channel.open(ipfs2, id1)
+      c1.on('message', () => {})
+      c2.on('message', () => {})
+      await c1.connect()
+      await c2.connect()
+      assert.equal(c1.listenerCount('message'), 1)
+      assert.equal(c2.listenerCount('message'), 1)
+      c1.close()
+      c2.close()
+      assert.equal(c1.listenerCount('message'), 0)
+      assert.equal(c2.listenerCount('message'), 0)
+    })
   })
 
   describe('errors', function() {

@@ -88,6 +88,7 @@ class DirectChannel extends EventEmitter {
    * Close the channel
    */
   close () {
+    this.removeAllListeners('message')
     this._ipfs.pubsub.unsubscribe(this._id, this._messageHandler)
   }
 
