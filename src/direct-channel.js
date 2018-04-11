@@ -21,32 +21,10 @@ class DirectChannel extends EventEmitter {
       throw new Error('This IPFS node does not support pubsub.')
     }
 
-    // Setup IDs
-    this._senderID = getPeerID(this._ipfs)
     this._receiverID = receiverID
-
-    if (!this._senderID) {
-      throw new Error('Sender ID was undefined')
-    }
 
     if (!this._receiverID) {
       throw new Error('Receiver ID was undefined')
-    }
-
-    // Channel's participants
-    this._peers = Array.from([this._senderID, this._receiverID]).sort()
-
-    // ID of the channel is "<peer1 id>/<peer 2 id>""
-    this._id = path.join('/', PROTOCOL, this._peers.join('/'))
-
-    // Function to use to handle incoming messages
-    this._messageHandler = message => {
-      // Make sure the message is coming from the correct peer
-      const isValid = message && message.from === this._receiverID
-      // Filter out all messages that didn't come from the second peer
-      if (isValid) {
-        this.emit('message', message)
-      }
     }
 
     // Start communicating
@@ -92,7 +70,32 @@ class DirectChannel extends EventEmitter {
     this._ipfs.pubsub.unsubscribe(this._id, this._messageHandler)
   }
 
+  async _setup () {
+    this._senderID = await getPeerID(this._ipfs)
+
+    if (!this._senderID) {
+      throw new Error('Sender ID was undefined')
+    }
+
+    // Channel's participants
+    this._peers = Array.from([this._senderID, this._receiverID]).sort()
+
+    // ID of the channel is "<peer1 id>/<peer 2 id>""
+    this._id = path.join('/', PROTOCOL, this._peers.join('/'))
+
+    // Function to use to handle incoming messages
+    this._messageHandler = message => {
+      // Make sure the message is coming from the correct peer
+      const isValid = message && message.from === this._receiverID
+      // Filter out all messages that didn't come from the second peer
+      if (isValid) {
+        this.emit('message', message)
+      }
+    }
+  }
+
   async _openChannel () {
+    await this._setup()
     await this._ipfs.pubsub.subscribe(this._id, this._messageHandler)
   }
 

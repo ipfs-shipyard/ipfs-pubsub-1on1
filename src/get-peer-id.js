@@ -1,7 +1,7 @@
 'use strict'
 
-const getPeerID = (ipfs) => {
-  return ipfs._peerInfo.id._idB58String || ipfs._peerInfo.id
+const getPeerID = async (ipfs) => {
+  return (await ipfs.id()).id
 }
 
 exports.getPeerID = getPeerID
