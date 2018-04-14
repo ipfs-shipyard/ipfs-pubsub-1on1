@@ -11,7 +11,7 @@ const getPeerID = require('./get-peer-id')
  * Communication channel over Pubsub between two IPFS nodes
  */
 class DirectChannel extends EventEmitter {
-  constructor (ipfs, receiverID, options = { open: true }) {
+  constructor (ipfs, receiverID) {
     super()
 
     // IPFS instance to use internally
@@ -26,11 +26,7 @@ class DirectChannel extends EventEmitter {
     if (!this._receiverID) {
       throw new Error('Receiver ID was undefined')
     }
-
-    // Start communicating
-    if (options.open || !options) {
-      this._openChannel()
-    }
+    // See _setup() for more state initialization
   }
 
   /**
@@ -99,9 +95,8 @@ class DirectChannel extends EventEmitter {
     await this._ipfs.pubsub.subscribe(this._id, this._messageHandler)
   }
 
-  static async open (ipfs, receiverID, options) {
-    const opts = Object.assign({}, options, { open: false })
-    const channel = new DirectChannel(ipfs, receiverID, opts)
+  static async open (ipfs, receiverID) {
+    const channel = new DirectChannel(ipfs, receiverID)
     await channel._openChannel()
     return channel
   }
