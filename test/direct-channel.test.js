@@ -11,7 +11,8 @@ const {
   waitForPeers,
 } = require('./utils/ipfs-utils')
 
-const Channel = require('../src/direct-channel.js')
+const Channel = require('../src/direct-channel')
+const getPeerID = require('../src/get-peer-id')
 const PROTOCOL = require('../src/protocol')
 
 // IPFS instances used in these tests
@@ -36,9 +37,9 @@ describe('DirectChannel', function() {
     ipfs1 = instances[0]
     ipfs2 = instances[1]
     ipfs3 = instances[2]
-    id1 = ipfs1._peerInfo.id._idB58String
-    id2 = ipfs2._peerInfo.id._idB58String
-    id3 = ipfs3._peerInfo.id._idB58String
+    id1 = await getPeerID(ipfs1)
+    id2 = await getPeerID(ipfs2)
+    id3 = await getPeerID(ipfs3)
     // Note, we only create channels between peer1 and peer2 in these test,
     // peer3 is used for "external actor" tests
     expectedPeerIDs = Array.from([id1, id2]).sort()
@@ -51,7 +52,7 @@ describe('DirectChannel', function() {
 
   describe('create a channel', function() {
     it('has two participants', async () => {
-      const c = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
+      const c = new Channel(ipfs1, id2)
       await c._setup()
       assert.deepEqual(c.peers, expectedPeerIDs)
       c.close()
