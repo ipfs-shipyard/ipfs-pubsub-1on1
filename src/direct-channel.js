@@ -69,10 +69,6 @@ class DirectChannel extends EventEmitter {
   async _setup () {
     this._senderID = await getPeerID(this._ipfs)
 
-    if (!this._senderID) {
-      throw new Error('Sender ID was undefined')
-    }
-
     // Channel's participants
     this._peers = Array.from([this._senderID, this._receiverID]).sort()
 
