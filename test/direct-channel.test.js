@@ -52,6 +52,7 @@ describe('DirectChannel', function() {
   describe('create a channel', function() {
     it('has two participants', async () => {
       const c = new Channel(ipfs1, ipfs2._peerInfo.id._idB58String)
+      await c._setup()
       assert.deepEqual(c.peers, expectedPeerIDs)
       c.close()
     })
@@ -59,13 +60,16 @@ describe('DirectChannel', function() {
     it('has correct ID', async () => {
       const expectedID = path.join('/', PROTOCOL, expectedPeerIDs.join('/'))
       const c = new Channel(ipfs1, id2)
+      await c._setup()
       assert.deepEqual(c.id, expectedID)
       c.close()
     })
 
     it('has two peers', async () => {
       const c1 = new Channel(ipfs1, id2)
+      await c1._setup()
       const c2 = new Channel(ipfs2, id1)
+      await c2._setup()
       assert.deepEqual(c1.peers, expectedPeerIDs)
       assert.deepEqual(c2.peers, expectedPeerIDs)
       assert.equal(c1.id, path.join('/', PROTOCOL, expectedPeerIDs.join('/')))
