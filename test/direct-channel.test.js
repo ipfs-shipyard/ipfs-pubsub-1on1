@@ -229,6 +229,17 @@ describe('DirectChannel', function() {
 
       assert.equal(err, 'Error: This IPFS node does not support pubsub.')
     })
+
+    it('throws an error if receiver ID was not given', async () => {
+      let c, err
+      try {
+        c = await Channel.open(ipfs1)
+      } catch (e) {
+        err = e
+      }
+
+      assert.equal(err, 'Error: Receiver ID was undefined')
+    })
   })
 
   describe('non-participant peers can\'t send messages', function() {
