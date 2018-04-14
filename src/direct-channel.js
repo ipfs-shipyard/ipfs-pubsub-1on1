@@ -5,7 +5,7 @@ const EventEmitter = require('events')
 const PROTOCOL = require('./protocol')
 const encode = require('./encoding')
 const waitForPeers = require('./wait-for-peers')
-const { getPeerID } = require('./get-peer-id')
+const getPeerID = require('./get-peer-id')
 
 /**
  * Communication channel over Pubsub between two IPFS nodes

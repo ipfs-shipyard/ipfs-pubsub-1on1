@@ -1,7 +1,8 @@
 'use strict'
 
 const getPeerID = async (ipfs) => {
-  return (await ipfs.id()).id
+  const peerInfo = await ipfs.id()
+  return peerInfo.id
 }
 
-exports.getPeerID = getPeerID
+module.exports = getPeerID
