@@ -13,9 +13,13 @@ const waitForPeers = async (ipfs, peersToWait, topic) => {
 
   return new Promise(async (resolve, reject) => {
     const interval = setInterval(async () => {
-      if (await checkPeers()) {
-        clearInterval(interval)
-        resolve()
+      try {
+        if (await checkPeers()) {
+          clearInterval(interval)
+          resolve()
+        }
+      } catch (e) {
+        reject(e)
       }
     }, 100)
   })
