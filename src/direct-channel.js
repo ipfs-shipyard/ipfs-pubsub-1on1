@@ -73,7 +73,7 @@ class DirectChannel extends EventEmitter {
     this._peers = Array.from([this._senderID, this._receiverID]).sort()
 
     // ID of the channel is "<peer1 id>/<peer 2 id>""
-    this._id = '/' + '' + PROTOCOL + '' + this._peers.join('/')
+    this._id = '/' + '' + PROTOCOL + '/' + this._peers.join('/')
 
     // Function to use to handle incoming messages
     this._messageHandler = message => {
