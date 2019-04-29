@@ -4,7 +4,7 @@
 
 ***Work in progress!***
 
-`ipfs-pubsub-1on1` is a 1-to-1 communication channel over IPFS Pubsub. It enables two peers to exchange messages between each other.
+`ipfs-pubsub-1on1` is a 1-to-1 communication channel over IPFS Pubsub. It enables two peers to exchange messages between each other. Note that the channel is currently not authenticated nor encrypted!
 
 ## Usage
 
