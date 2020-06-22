@@ -12,11 +12,7 @@ const waitForPeers = require('../../src/wait-for-peers')
  * @return {[Promise<IPFS>]} [IPFS instance]
  */
 const startIpfs = (config = {}) => {
-  return new Promise((resolve, reject) => {
-    const ipfs = new IPFS(config)
-    ipfs.on('error', reject)
-    ipfs.on('ready', () => resolve(ipfs))
-  })
+  return IPFS.create(config)
 }
 
 const createIpfsTestInstances = async (ipfsPaths) => {
@@ -37,14 +33,16 @@ const destroyIpfsTestInstances = async (instances, ipfsPaths) => {
 
 const connectIpfsInstances = async (instances) => {
   // Multiaddress of all instances
-  const addresses = instances.map(ipfs => ipfs._peerInfo.multiaddrs._multiaddrs[0].toString())
+  const addresses = await Promise.all(instances.map(async ipfs => {
+    return (await ipfs.id()).addresses[0].toString()
+  }))
   // Connect each instance with all other instances
   instances.forEach(ipfs => {
     // Connect to all addresses
-    addresses.forEach(addr => {
+    addresses.forEach(async addr => {
       // But don't try to connect to self
-      if (addr !== ipfs._peerInfo.multiaddrs._multiaddrs[0].toString()) {
-        ipfs.swarm.connect(addr)
+      if (addr !== (await ipfs.id()).addresses[0].toString()) {
+        await ipfs.swarm.connect(addr)
       }
     })
   })

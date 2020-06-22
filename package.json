@@ -9,7 +9,7 @@
     "safe-buffer": "~5.1.2"
   },
   "devDependencies": {
-    "ipfs": "~0.35.0",
+    "ipfs": "^0.46.0",
     "mocha": "^6.1.4",
     "p-map-series": "^2.1.0",
     "rimraf": "^2.6.3"
