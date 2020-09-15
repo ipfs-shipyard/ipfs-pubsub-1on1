@@ -168,7 +168,7 @@ describe('DirectChannel', function() {
       await c1.connect()
 
       peers = await ipfs1.pubsub.peers(c1.id)
-      assert.deepEqual(peers, [id2])
+      assert.deepEqual(peers, [id1, id2])
 
       c1.close()
       c2.close()
