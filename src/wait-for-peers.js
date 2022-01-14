@@ -1,5 +1,7 @@
 'use strict'
 
+let interval = null
+
 const waitForPeers = async (ipfs, peersToWait, topic) => {
   const checkPeers = async () => {
     const peers = await ipfs.pubsub.peers(topic)
@@ -12,10 +14,11 @@ const waitForPeers = async (ipfs, peersToWait, topic) => {
   }
 
   return new Promise(async (resolve, reject) => {
-    const interval = setInterval(async () => {
+    interval = setInterval(async () => {
       try {
         if (await checkPeers()) {
           clearInterval(interval)
+          interval = null
           resolve()
         }
       } catch (e) {
@@ -25,4 +28,10 @@ const waitForPeers = async (ipfs, peersToWait, topic) => {
   })
 }
 
-module.exports = waitForPeers
+const clearWaitForPeersInterval = () => {
+  if (interval) {
+    clearInterval(interval)
+  }
+}
+
+module.exports = { waitForPeers, clearWaitForPeersInterval }

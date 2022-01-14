@@ -4,7 +4,7 @@ const path = require('path')
 const EventEmitter = require('events')
 const PROTOCOL = require('./protocol')
 const encode = require('./encoding')
-const waitForPeers = require('./wait-for-peers')
+const { waitForPeers, clearWaitForPeersInterval } = require('./wait-for-peers')
 const getPeerID = require('./get-peer-id')
 
 /**
@@ -64,6 +64,7 @@ class DirectChannel extends EventEmitter {
   close () {
     this.removeAllListeners('message')
     this._ipfs.pubsub.unsubscribe(this._id, this._messageHandler)
+    clearWaitForPeersInterval()
   }
 
   async _setup () {
