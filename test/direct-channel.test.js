@@ -194,13 +194,21 @@ Object.keys(testAPIs).forEach(API => {
         await c2.connect()
 
         return new Promise(async (resolve, reject) => {
+          assert.equal(c1._closed, false)
+          assert.equal(c1._isClosed(), false)
           c1.close()
           const topics1 = await ipfs1.pubsub.ls()
           assert.deepEqual(topics1, [])
+          assert.equal(c1._closed, true)
+          assert.equal(c1._isClosed(), true)
 
+          assert.equal(c2._closed, false)
+          assert.equal(c2._isClosed(), false)
           c2.close()
           const topics2 = await ipfs2.pubsub.ls()
           assert.deepEqual(topics1, [])
+          assert.equal(c2._closed, true)
+          assert.equal(c2._isClosed(), true)
 
           setTimeout(async () => {
             const peers1 = await ipfs1.pubsub.peers(c1.id)
