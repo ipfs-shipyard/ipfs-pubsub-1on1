@@ -14,7 +14,9 @@ const waitForPeers = async (ipfs, peersToWait, topic, isClosed) => {
   return new Promise(async (resolve, reject) => {
     const interval = setInterval(async () => {
       try {
-        if (isClosed() || await checkPeers()) {
+        if (isClosed()) {
+          clearInterval(interval)
+        } else if (await checkPeers()) {
           clearInterval(interval)
           resolve()
         }
