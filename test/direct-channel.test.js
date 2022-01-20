@@ -194,13 +194,21 @@ Object.keys(testAPIs).forEach(API => {
         await c2.connect()
 
         return new Promise(async (resolve, reject) => {
+          assert.equal(c1._closed, false)
+          assert.equal(c1._isClosed(), false)
           c1.close()
           const topics1 = await ipfs1.pubsub.ls()
           assert.deepEqual(topics1, [])
+          assert.equal(c1._closed, true)
+          assert.equal(c1._isClosed(), true)
 
+          assert.equal(c2._closed, false)
+          assert.equal(c2._isClosed(), false)
           c2.close()
           const topics2 = await ipfs2.pubsub.ls()
           assert.deepEqual(topics1, [])
+          assert.equal(c2._closed, true)
+          assert.equal(c2._isClosed(), true)
 
           setTimeout(async () => {
             const peers1 = await ipfs1.pubsub.peers(c1.id)
@@ -253,7 +261,7 @@ Object.keys(testAPIs).forEach(API => {
     })
 
     describe('non-participant peers can\'t send messages', function() {
-      it('doesn\'t receive unwated messages', async () => {
+      it('doesn\'t receive unwanted messages', async () => {
         const c1 = await Channel.open(ipfs1, id2)
         const c2 = await Channel.open(ipfs2, id1)
 
@@ -269,7 +277,7 @@ Object.keys(testAPIs).forEach(API => {
         })
 
         await ipfs3.pubsub.subscribe(c1.id, () => {})
-        await waitForPeers(ipfs1, [id3], c1.id)
+        await waitForPeers(ipfs1, [id3], c1.id, c1._isClosed.bind(c1))
         await ipfs3.pubsub.publish(c1.id, Buffer.from('OMG!'))
 
         return new Promise((resolve, reject) => {
