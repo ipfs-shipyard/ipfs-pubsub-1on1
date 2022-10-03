@@ -82,7 +82,7 @@ class DirectChannel extends EventEmitter {
     // Function to use to handle incoming messages
     this._messageHandler = message => {
       // Make sure the message is coming from the correct peer
-      const isValid = message && message.from === this._receiverID
+      const isValid = message && String(message.from) === String(this._receiverID)
       // Filter out all messages that didn't come from the second peer
       if (isValid) {
         this.emit('message', message)
