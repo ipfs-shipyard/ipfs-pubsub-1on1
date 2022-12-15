@@ -1,8 +1,6 @@
-'use strict'
+import { Buffer } from 'safe-buffer'
 
-const Buffer = require('safe-buffer').Buffer
-
-module.exports = (_message) => {
+export default (_message) => {
   let message = _message
   if (!Buffer.isBuffer(message)) {
     message = Buffer.from(message)
