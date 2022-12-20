@@ -10,7 +10,7 @@
 
 ```javascript
 // Include as lib
-const Channel = require('ipfs-pubsub-1on1')
+import Channel from 'ipfs-pubsub-1on1'
 // Create IPFS instance somehow
 const ipfs = new IPFS()
 // IPFS peer ID of the peer to connect to
