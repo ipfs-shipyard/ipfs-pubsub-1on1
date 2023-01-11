@@ -1,34 +1,32 @@
-'use strict'
-
-const path = require('path')
-const rmrf = require('rimraf')
-const assert = require('assert')
-const pMapSeries = require('p-map-series')
-const {
+import path from 'path'
+import rmrf from 'rimraf'
+import assert from 'assert'
+import pMapSeries from 'p-map-series'
+import {
   connectPeers,
   startIpfs,
   stopIpfs,
   getIpfsPeerId,
   testAPIs,
-  waitForPeers,
-} = require('orbit-db-test-utils')
+  waitForPeers
+} from 'orbit-db-test-utils'
 
-const Channel = require('../src/direct-channel')
-const getPeerID = require('../src/get-peer-id')
-const PROTOCOL = require('../src/protocol')
+import Channel from '../src/direct-channel.js'
+import getPeerID from '../src/get-peer-id.js'
+import PROTOCOL from '../src/protocol.js'
 
 // IPFS instances used in these tests
 const ipfsPaths = [
   './tmp/peer1/ipfs',
   './tmp/peer2/ipfs',
-  './tmp/peer3/ipfs',
+  './tmp/peer3/ipfs'
 ]
 
 Object.keys(testAPIs).forEach(API => {
-  describe(`DirectChannel ${API}`, function() {
+  describe(`DirectChannel ${API}`, function () {
     this.timeout(5000)
 
-    let instances = []
+    const instances = []
     let ipfsd1, ipfsd2, ipfsd3, ipfs1, ipfs2, ipfs3
 
     let id1, id2, id3
@@ -60,7 +58,7 @@ Object.keys(testAPIs).forEach(API => {
       rmrf.sync('./tmp/') // remove test data directory
     })
 
-    describe('create a channel', function() {
+    describe('create a channel', function () {
       it('has two participants', async () => {
         const c = await Channel.open(ipfs1, id2)
         assert.deepEqual(c.peers, expectedPeerIDs)
@@ -94,7 +92,7 @@ Object.keys(testAPIs).forEach(API => {
       })
     })
 
-    describe('properties', function() {
+    describe('properties', function () {
       let c
 
       beforeEach(async () => {
@@ -127,7 +125,7 @@ Object.keys(testAPIs).forEach(API => {
       })
     })
 
-    describe('messaging', function() {
+    describe('messaging', function () {
       it('sends and receives messages', async () => {
         const c1 = await Channel.open(ipfs1, id2)
         const c2 = await Channel.open(ipfs2, id1)
@@ -141,20 +139,18 @@ Object.keys(testAPIs).forEach(API => {
 
           c2.on('message', async (m) => {
             assert.notEqual(m, null)
-            assert.equal(m.from, id1)
+            assert.equal(m.from, id1.toString())
             assert.equal(Buffer.from(m.data).toString(), Buffer.from('hello1'))
-            assert.equal(m.topicIDs.length, 1)
-            assert.equal(m.topicIDs[0], c1.id)
-            assert.equal(m.topicIDs[0], c2.id)
+            assert.equal(m.topic, c1.id)
+            assert.equal(m.topic, c2.id)
             await c2.send(Buffer.from('hello2'))
           })
 
           c1.on('message', (m) => {
-            assert.equal(m.from, id2)
+            assert.equal(m.from, id2.toString())
             assert.equal(Buffer.from(m.data).toString(), Buffer.from('hello2'))
-            assert.equal(m.topicIDs.length, 1)
-            assert.equal(m.topicIDs[0], c1.id)
-            assert.equal(m.topicIDs[0], c2.id)
+            assert.equal(m.topic, c1.id)
+            assert.equal(m.topic, c2.id)
             c1.close()
             c2.close()
             setTimeout(() => resolve(), 500)
@@ -165,7 +161,7 @@ Object.keys(testAPIs).forEach(API => {
       })
     })
 
-    describe('connect', function() {
+    describe('connect', function () {
       it('connects the peers', async () => {
         let c1, c2
 
@@ -178,14 +174,14 @@ Object.keys(testAPIs).forEach(API => {
         await c1.connect()
 
         peers = await ipfs1.pubsub.peers(c1.id)
-        assert.deepEqual(peers, [id2])
+        assert.deepEqual(peers.map(e => String(e)), [id2.toString()])
 
         c1.close()
         c2.close()
       })
     })
 
-    describe('disconnecting', function() {
+    describe('disconnecting', function () {
       it('closes a channel', async () => {
         const c1 = await Channel.open(ipfs1, id2)
         const c2 = await Channel.open(ipfs2, id1)
@@ -236,7 +232,7 @@ Object.keys(testAPIs).forEach(API => {
       })
     })
 
-    describe('errors', function() {
+    describe('errors', function () {
       it('throws an error if pubsub is not supported by given IPFS instance', async () => {
         let c, err
         try {
@@ -260,7 +256,7 @@ Object.keys(testAPIs).forEach(API => {
       })
     })
 
-    describe('non-participant peers can\'t send messages', function() {
+    describe('non-participant peers can\'t send messages', function () {
       it('doesn\'t receive unwanted messages', async () => {
         const c1 = await Channel.open(ipfs1, id2)
         const c2 = await Channel.open(ipfs2, id1)
@@ -269,11 +265,10 @@ Object.keys(testAPIs).forEach(API => {
         await c2.connect()
 
         c1.on('message', (m) => {
-          assert.equal(m.from, id2)
+          assert.equal(m.from, id2.toString())
           assert.equal(m.data.toString(), 'hello1')
-          assert.equal(m.topicIDs.length, 1)
-          assert.equal(m.topicIDs[0], c1.id)
-          assert.equal(m.topicIDs[0], c2.id)
+          assert.equal(m.topic, c1.id)
+          assert.equal(m.topic, c2.id)
         })
 
         await ipfs3.pubsub.subscribe(c1.id, () => {})

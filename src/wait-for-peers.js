@@ -1,6 +1,4 @@
-'use strict'
-
-const waitForPeers = async (ipfs, peersToWait, topic, isClosed) => {
+export default async (ipfs, peersToWait, topic, isClosed) => {
   const checkPeers = async () => {
     const peers = await ipfs.pubsub.peers(topic)
     const idPeersToWait = peersToWait.map(e => String(e))
@@ -28,5 +26,3 @@ const waitForPeers = async (ipfs, peersToWait, topic, isClosed) => {
     }, 100)
   })
 }
-
-module.exports = waitForPeers

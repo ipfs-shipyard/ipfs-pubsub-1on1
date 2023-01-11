@@ -1,16 +1,14 @@
-'use strict'
-
-const path = require('path')
-const EventEmitter = require('events')
-const PROTOCOL = require('./protocol')
-const encode = require('./encoding')
-const waitForPeers = require('./wait-for-peers')
-const getPeerID = require('./get-peer-id')
+import path from 'path'
+import EventEmitter from 'events'
+import PROTOCOL from './protocol.js'
+import encode from './encoding.js'
+import waitForPeers from './wait-for-peers.js'
+import getPeerID from './get-peer-id.js'
 
 /**
  * Communication channel over Pubsub between two IPFS nodes
  */
-class DirectChannel extends EventEmitter {
+export default class DirectChannel extends EventEmitter {
   constructor (ipfs, receiverID) {
     super()
 
@@ -102,5 +100,3 @@ class DirectChannel extends EventEmitter {
     return channel
   }
 }
-
-module.exports = DirectChannel
